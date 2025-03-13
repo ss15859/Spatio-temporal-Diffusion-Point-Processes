@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 
 import numpy as np
 import time
-import tensorflow.compat.v1 as tf
+# import tensorflow.compat.v1 as tf
 
 # constants
 
