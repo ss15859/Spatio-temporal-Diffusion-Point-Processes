@@ -18,6 +18,7 @@ import json
 import sys
 import math
 import pandas as pd
+import matplotlib.pyplot as plt
 
 import warnings
 
@@ -75,7 +76,7 @@ def get_args():
     parser.add_argument('--test_nll_start', type=lambda s : pd.to_datetime(s,format='%Y-%m-%d:%H:%M:%S'), help='')
     parser.add_argument('--test_nll_end', type=lambda s : pd.to_datetime(s,format='%Y-%m-%d:%H:%M:%S'), help='')
     parser.add_argument('--marked_output', type=int, default=1, help='')
-    parser.add_argument('--num_catalogs', type=int, default=1000, help='')
+    parser.add_argument('--num_catalogs', type=int, default=10000, help='')
     parser.add_argument('--day_number', type=int, default=0, help='')
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
@@ -91,7 +92,7 @@ if opt.dataset == 'HawkesGMM':
 os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.cuda_id)
 
 # Force CPU usage if CUDA is not available
-if not torch.cuda.is_available():
+if not (torch.cuda.is_available()) or (opt.mode == 'sample'):
     print("CUDA not available, using CPU instead")
     device = torch.device("cpu")
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -268,7 +269,7 @@ def create_test_day_dataloader(opt, day_number=opt.day_number, Max=None, Min=Non
     test_day_data = [[[normalization(i[j], Max[j], Min[j]) for j in range(len(i))] for i in u] for u in test_day_data]
 
     test_dayloader = get_dataloader(test_day_data, batch_size=batch_size, D=opt.dim, shuffle=False)
-    print('Min & Max', (Max, Min), opt.num_types)
+    print('Max & Min', (Max, Min))
     return test_dayloader, start_time_datetime, start_time_float, end_time_float, center_latitude, center_longitude
 
 
@@ -469,15 +470,23 @@ if __name__ == "__main__":
                             enc_out_non_mask = enc_out_non_mask[opt.seq_len-2::opt.seq_len-1,:,:]
 
 
-                            sampled_seq_all = Model.diffusion.sample(batch_size = enc_out_non_mask.shape[0],cond=enc_out_non_mask)
+                            sampled_seq = Model.diffusion.sample(batch_size = enc_out_non_mask.shape[0],cond=enc_out_non_mask)
                             sampled_seq_temporal_all=(sampled_seq[:,0,:1].detach().cpu() + MIN[1]) * (MAX[1]-MIN[1])
-                            sampled_seq_spatial_all=((sampled_seq[:,0,-opt.dim:].detach().cpu() + torch.tensor([MIN[2:]])) * (torch.tensor([MAX[2:]])-torch.tensor([MIN[2:]]))).unsqueeze(dim=1)
-                                                    
+
+                            locs = (denormalization(sampled_seq[:,:,-2:], torch.tensor([MAX[-2:]]), torch.tensor([MIN[-2:]])))
+                            # print('Max & Min', (MAX, MIN))
+                            # print(locs.shape)
+                            # plt.scatter(locs[:,:,0], locs[:,:,1])
+                            # plt.show()
+
+                            # sampled_seq_spatial_all=((sampled_seq[:,0,-opt.dim:].detach().cpu() + torch.tensor([MIN[2:]])) * (torch.tensor([MAX[2:]])-torch.tensor([MIN[2:]]))).unsqueeze(dim=1)
+                            sampled_seq_spatial_all = denormalization(sampled_seq[:,:,-2:], torch.tensor([MAX[-2:]]), torch.tensor([MIN[-2:]]))
 
                             # convert the generated events to datetime
                             last_event_times = batch[0][:,-1]
                             gen_event_times = last_event_times + sampled_seq_temporal_all.cpu().t()
                             gen_event_datetimes = start_time_datetime + pd.to_timedelta(gen_event_times.numpy().flatten(),unit='D')
+                            print(gen_event_datetimes)
 
                             gen_events = torch.cat((gen_event_times.t().unsqueeze(dim=2), sampled_seq.cpu()), dim=-1)
 
@@ -595,6 +604,7 @@ if __name__ == "__main__":
                         break
                 
                 else:
+                    print('Model Updated!!')
                     torch.save(Model.state_dict(), opt.save_path + 'model_best.pkl')
                     early_stop = 0
                 

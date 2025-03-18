@@ -4,6 +4,7 @@
 
 # dataset
 dataset/
+*.csv
 
 # Other files and folders
 .vscode/
@@ -17,6 +18,9 @@ dataset/
 *.pyc
 *.ipynb_checkpoints/
 
+
+model*
+!model_best.pkl
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
