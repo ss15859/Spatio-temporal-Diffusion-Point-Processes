@@ -5,6 +5,8 @@
 # dataset
 dataset/
 *.csv
+*.png
+*.json
 
 # Other files and folders
 .vscode/
