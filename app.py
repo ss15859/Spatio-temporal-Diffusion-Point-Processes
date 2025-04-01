@@ -68,7 +68,7 @@ def get_args():
     parser.add_argument('--cuda_id', type=str, default='0', help='')
     parser.add_argument('--weight_path', type=str, default='./ModelSave/dataset_Earthquake_model_SMSTPP/model_300.pkl', help='')
     parser.add_argument('--save_path', type=str, help='')
-    parser.add_argument('--Mcut', type=float, help='')
+    parser.add_argument('--Mcut', type=float, help='')  
     parser.add_argument('--catalog_path', type=str, help='')
     parser.add_argument('--auxiliary_start', type=lambda s : pd.to_datetime(s,format='%Y-%m-%d:%H:%M:%S'), help='')
     parser.add_argument('--train_nll_start', type=lambda s : pd.to_datetime(s,format='%Y-%m-%d:%H:%M:%S'), help='')
